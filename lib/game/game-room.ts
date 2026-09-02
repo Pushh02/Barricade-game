@@ -1,5 +1,6 @@
 import { BarricadeGame } from "./barricade-game";
-import type { Direction, GameSnapshot, Player } from "./types";
+import { Barricade } from "./barricade-piece";
+import type { BarricadeData, Direction, GameSnapshot, Player } from "./types";
 
 export class GameRoom {
   private game: BarricadeGame;
@@ -60,6 +61,21 @@ export class GameRoom {
     if (this.game.currentPlayer !== player) return null;
 
     const nextGame = this.game.move(direction);
+    if (nextGame) {
+      this.game = nextGame;
+    }
+    return nextGame;
+  }
+
+  handlePlaceBarricade(
+    playerId: string,
+    barricadeData: BarricadeData
+  ): BarricadeGame | null {
+    const player = this.getPlayerById(playerId);
+    if (player === null) return null;
+    if (this.game.currentPlayer !== player) return null;
+
+    const nextGame = this.game.placeBarricade(Barricade.from(barricadeData));
     if (nextGame) {
       this.game = nextGame;
     }
