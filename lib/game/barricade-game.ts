@@ -1,6 +1,10 @@
 import { Barricade } from "./barricade-piece";
 import { BARRICADE_LIMIT, GRID_SIZE, MIDDLE_COL } from "./constants";
 import { Move } from "./move";
+import {
+  bothPlayersHavePathToGoal,
+  isMoveBlockedByBarricades,
+} from "./pathfinding";
 import { Position } from "./position";
 import type { Direction, GameSnapshot, Player } from "./types";
 
@@ -118,7 +122,16 @@ export class BarricadeGame {
     if (this.isOver()) return false;
     if (this.getBarricadesRemaining(this.currentPlayer) <= 0) return false;
     if (!barricade.isInBounds()) return false;
-    return !this.barricades.some((existing) => barricade.overlaps(existing));
+    if (this.barricades.some((existing) => barricade.overlaps(existing))) {
+      return false;
+    }
+
+    const proposed = [...this.barricades, barricade];
+    return bothPlayersHavePathToGoal(
+      this.p1Position,
+      this.p2Position,
+      proposed
+    );
   }
 
   move(direction: Direction): BarricadeGame | null {
@@ -223,27 +236,7 @@ export class BarricadeGame {
   }
 
   private isMoveBlocked(from: Position, to: Position): boolean {
-    if (to.row < from.row) {
-      return this.isHorizontalEdgeBlocked(to.row, from.col);
-    }
-    if (to.row > from.row) {
-      return this.isHorizontalEdgeBlocked(from.row, from.col);
-    }
-    if (to.col < from.col) {
-      return this.isVerticalEdgeBlocked(to.col, from.row);
-    }
-    if (to.col > from.col) {
-      return this.isVerticalEdgeBlocked(from.col, from.row);
-    }
-    return false;
-  }
-
-  private isHorizontalEdgeBlocked(edgeRow: number, col: number): boolean {
-    return this.barricades.some((b) => b.blocksVerticalCrossing(edgeRow, col));
-  }
-
-  private isVerticalEdgeBlocked(edgeCol: number, row: number): boolean {
-    return this.barricades.some((b) => b.blocksHorizontalCrossing(edgeCol, row));
+    return isMoveBlockedByBarricades(from, to, this.barricades);
   }
 
   private getDirectionDelta(player: Player, direction: Direction): Position {
